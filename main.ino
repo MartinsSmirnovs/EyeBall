@@ -33,18 +33,8 @@ bool defaultEyeArr[8][8] = {
   {0, 1, 1, 1, 1, 1, 1, 0},
   {0, 0, 1, 1, 1, 1, 0, 0}
 };
-bool eyeArr[8][8] = {
-  {0, 0, 1, 1, 1, 1, 0, 0},
-  {0, 1, 1, 1, 1, 1, 1, 0},
-  {1, 1, 1, 1, 1, 1, 1, 1},
-  {1, 1, 1, 1, 1, 1, 1, 1},
-  {1, 1, 1, 1, 1, 1, 1, 1},
-  {1, 1, 1, 1, 1, 1, 1, 1},
-  {0, 1, 1, 1, 1, 1, 1, 0},
-  {0, 0, 1, 1, 1, 1, 0, 0}
-};
 
-uint8_t oldPupil[4][2];//iepriekšējā zīlītes vērtība
+
 uint8_t eyePupil[4][2] = {{3,3}, {4,3}, {3,4}, {4,4}};
 
 void setup() {
@@ -58,21 +48,33 @@ void setup() {
     Serial.println(F("SSD1306 allocation failed"));
     for (;;);
   }
-  delay(2000);
+  delay(1000);
   display.clearDisplay();
   display.display();
+
 }
 
 void loop() {
-  mapXY();//nolasa ievadītās vērtības
+  //mapXY();//nolasa ievadītās vērtības
 
+  potXVal = 3; //pagaidu testa variants, jo noplīsa džoistika vads
+  potYVal = 3;
+  
+  
+  drawPupil();//Iestata acs zīlītes vērtības masīvā
+  drawEye();//uzzīmē acs baltumu
+  blinkEye();
+}
+
+void blinkEye(){
+  //kods priekš nomirkšķināšanas
+}
+
+
+
+void drawPupil(){
   if (defaultEyeArr[potXVal][potYVal] == true/*salīdzina ar pilno aci*/ && millis() - oldTimeInt > 100 /*debounce daļa*/ ) {
-    oldTimeInt = millis();
-    for(int i = 0; i<4; i++){
-      for(int j = 0; j<2; j++){
-        oldPupil[i][j] = eyePupil[i][j];
-        }
-    } 
+     oldTimeInt = millis();
      eyePupil[0][0] = potXVal;
      eyePupil[0][1] = potYVal;
      eyePupil[1][0] = potXVal+1;
@@ -82,50 +84,20 @@ void loop() {
      eyePupil[3][0] = potXVal+1;
      eyePupil[3][1] = potYVal+1;           
     }
-
-    Serial.println();
-    Serial.println();
-    for(int i = 0; i< 4; i++){
-      if(i == 2){
-        Serial.println();
-        }
-      for(int j = 0; j<2; j++){
-        Serial.print(eyePupil[i][j]);
-        Serial.print(" ");
-        }
-      }
-
-  drawPupil(oldPupil, true);//iestata iepriekšējās zīlītes vērtības acs baltumam
-  drawPupil(eyePupil, false);//iestat esošās zīlītes vērtības
-  drawEye();//uzzīmē acs baltumu
-  /*
-  Serial.println("Getting Val:");
-  Serial.print("X: ");
-  Serial.println(potXVal);
-  Serial.print("Y: ");
-  Serial.println(potYVal);*/
-  /*
-  Serial.println();
-    for(int i = 0; i<8; i++){
-    Serial.print("{");
-    for(int j = 0; j<8; j++){
-      Serial.print(eyeArr[i][j]);
-      Serial.print(",");
-      }
-    Serial.println("}");
-    }*/
 }
 
-void mapXY() {//nolasa vērtības un tās pieregulē
+void mapXY() {//nolasa vērtības un tās pieregulē     JĀIESTATA, LAI ACS PUNKTS KUSTĒTOS VISUR IZŅEMOT KAD X == 0 UN Y == 0 VAI X == 6 UN Y == 0 VAI X == 0 UN Y == 6 UN X == 6 UN Y == 6
+  if(!(map(analogRead(potX), 0, 1023, 0, 7) == 0 && map(analogRead(potY), 0, 1023, 0, 7) == 0 || map(analogRead(potX), 0, 1023, 0, 7) == 6 && map(analogRead(potY), 0, 1023, 0, 7) == 0 || map(analogRead(potX), 0, 1023, 0, 7) == 0 && map(analogRead(potY), 0, 1023, 0, 7) == 6 || map(analogRead(potX), 0, 1023, 0, 7) == 6 && map(analogRead(potY), 0, 1023, 0, 7) == 6)){//tiek pārbaudīts vai vērtību drīkst setot un vai acs zīlīte vsp neizies ārā
   potXVal = map(analogRead(potX), 0, 1023, 0, 7);
   potYVal = map(analogRead(potY), 0, 1023, 0, 7);
   buttonPress = digitalRead(button);
+}
 }
 
 void drawEye() { //uzzīmē aci atbilstoši eyeArr masīvam
   for (int i = 1; i <= 8; i++) {
     for (int j = 5; j < 13; j++) {
-      if (eyeArr[i - 1][j - 5] == true) {
+      if (defaultEyeArr[i - 1][j - 5] == true && !(eyePupil[0][0] == i-1 && eyePupil[0][1]  == j-5|| eyePupil[1][0] == i-1 && eyePupil[1][1]  == j-5|| eyePupil[2][0] == i-1 && eyePupil[2][1]  == j-5|| eyePupil[3][0] == i-1 && eyePupil[3][1] == j-5)) {
         display.fillRect(j * squareLen + j, i * squareLen + i, squareLen, squareLen, WHITE);
       } else {
         display.fillRect(j * squareLen + j, i * squareLen + i, squareLen, squareLen, BLACK);
@@ -133,13 +105,4 @@ void drawEye() { //uzzīmē aci atbilstoši eyeArr masīvam
     }
   }
   display.display();
-}
-
-
-void drawPupil(uint8_t pupilArr[4][2], bool state) { //uzzīmē acs zīlīti
-    for(int i = 0; i<4; i++){
-      for(int j = 0; j<2; j++){
-        eyeArr[pupilArr[i][j]][pupilArr[i][1]] = state;
-        }
-      }
 }
